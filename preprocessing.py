@@ -28,7 +28,7 @@ def extract_function_docstring_pairs(python_files):
         except Exception as e:
             print(f"Error processing {file_path}: {e}")
 
-    return pairs
+    return pairs #a list of dictionaries of function name, params, docstring and file path
 
 
 def prepare_dataset(function_docstring_pairs):
@@ -37,7 +37,7 @@ def prepare_dataset(function_docstring_pairs):
 
     for pair in function_docstring_pairs:
         # Construct input and target strings
-        input_text = f"Generate documentation: def {pair['function_name']}({pair['params']}):"
+        input_text = f"Generate documentation: def {pair['function_name']}({pair['params']}):" ###OUR PROMPT!!!CHANGE THIS###
         target_text = pair['docstring']
 
         data.append({
@@ -46,4 +46,4 @@ def prepare_dataset(function_docstring_pairs):
         })
 
     import pandas as pd
-    return pd.DataFrame(data)
+    return pd.DataFrame(data) #a dataframe with input and target columns

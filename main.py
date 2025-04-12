@@ -7,9 +7,9 @@ from evaluation import evaluate_model, generate_documentation
 def main():
     # Define repositories to clone
     repos = [
-        "https://github.com/pandas-dev/pandas.git",
+        "https://github.com/getsentry/sentry.git",
         "https://github.com/scikit-learn/scikit-learn.git",
-        "https://github.com/pytorch/pytorch.git",
+        "https://github.com/paperless-ngx/paperless-ngx.git",
         # Add more repositories as needed
     ]
 

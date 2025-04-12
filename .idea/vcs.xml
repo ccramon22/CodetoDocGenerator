@@ -2,5 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/github_repos/paperless-ngx" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/github_repos/scikit-learn" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/github_repos/sentry" vcs="Git" />
   </component>
 </project>
