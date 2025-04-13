@@ -30,10 +30,14 @@ def main():
     # Prepare dataset
     df = prepare_dataset(pairs)
 
-    # Train model
-    model, tokenizer = train_documentation_model(df)
+    # Train model - note the updated return value handling
+    model, tokenizer, analytics = train_documentation_model(df)
 
     print("Training complete! Model saved to ./codet5_documentation_generator")
+
+    # Print analytics information
+    print(
+        f"Training took {analytics.get_training_time()} with an average of {analytics.get_average_seconds_per_step():.2f} seconds per iteration")
 
     # Test the model with a sample code snippet
     test_snippet = "def calculate_average(numbers):"
