@@ -1,0 +1,153 @@
+code,actual,predicted
+Generate documentation: def fetch_subscription_rdap_info(subscription_id: int):,"Fetches the RDAP network details for a subscriptions host and populates the
+    host_provider fields in the subscription.",Fetch the subscription rdap info for a given subscription ID.
+Generate documentation: def test_formatted_download_originals(self):,"GIVEN:
+            - Defined file naming format
+        WHEN:
+            - Bulk download request for original documents
+            - Bulk download request requests to follow format
+        THEN:
+            - Files in resulting zipfile are formatted","GIVEN:
+            - File containing originals
+        WHEN:
+            - File containing originals are formatted
+        THEN:
+            - File containing originals are formatted
+        THEN:
+            - File containing originals are formatted"
+"Generate documentation: def _generalized_average(U, V, average_method):",Return a particular mean of two numbers.,"Compute the average value of U and V.
+
+    Parameters
+    ----------
+    U : {array-like, sparse matrix} of shape (n_samples, n_features)
+        The input data.
+
+    V : array-like of shape (n_samples, n_features)
+        The output data.
+
+    average_method : callable
+        The average method to use.
+
+    Returns
+    -------
+    average : ndarray of shape (n_samples, n_features)
+        The average value."
+Generate documentation: def test_weighted_percentile_equal():,Check `weighted_percentile` with all weights equal to 1.,"GIVEN:
+            - A weighted percentile
+        WHEN:
+            - A weighted percentile is equal
+        THEN:
+            - A weighted percentile is equal
+        THEN:
+            - A weighted percentile is equal"
+Generate documentation: def clock_pulse(current_datetime=None):,"This task is run once a minute when to produce 'clock pulses' into the
+    monitor ingest topic. This is to ensure there is always a message in the
+    topic that can drive all partition clocks, which dispatch monitor tasks.","Clock pulse.
+
+    Parameters
+    ----------
+    current_datetime : datetime, default=None
+        Current datetime.
+
+    Returns
+    -------
+    clock_pulse : float
+        The clock pulse."
+"Generate documentation: def predict_proba(self, X):","Return prediction probabilities for each class of each output.
+
+        This method will raise a ``ValueError`` if any of the
+        estimators do not have ``predict_proba``.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The input data.
+
+        Returns
+        -------
+        p : array of shape (n_samples, n_classes), or a list of n_outputs \
+                such arrays if n_outputs > 1.
+            The class probabilities of the input samples. The order of the
+            classes corresponds to that in the attribute :term:`classes_`.
+
+            .. versionchanged:: 0.19
+                This function now returns a list of arrays where the length of
+                the list is ``n_outputs``, and each array is (``n_samples``,
+                ``n_classes``) for that particular output.","Predict probability of X.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Training data.
+
+        Returns
+        -------
+        probability : ndarray of shape (n_samples, n_features)
+            Predict probability of X."
+Generate documentation: def test_check_boundary_response_method_error():,"Check error raised for multi-output multi-class classifiers by
+    `_check_boundary_response_method`.","GIVEN:
+            - Request to check boundary response method
+        WHEN:
+            - Request to check boundary response method is called
+        THEN:
+            - Request to check boundary response method is called"
+"Generate documentation: def paired_euclidean_distances(X, Y):","Compute the paired euclidean distances between X and Y.
+
+    Read more in the :ref:`User Guide <metrics>`.
+
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Input array/matrix X.
+
+    Y : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Input array/matrix Y.
+
+    Returns
+    -------
+    distances : ndarray of shape (n_samples,)
+        Output array/matrix containing the calculated paired euclidean
+        distances.
+
+    Examples
+    --------
+    >>> from sklearn.metrics.pairwise import paired_euclidean_distances
+    >>> X = [[0, 0, 0], [1, 1, 1]]
+    >>> Y = [[1, 0, 0], [1, 1, 0]]
+    >>> paired_euclidean_distances(X, Y)
+    array([1., 1.])","Compute the distances between two points.
+
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training data.
+
+    Y : array-like of shape (n_samples, n_features)
+        Target data.
+
+    Returns
+    -------
+    distances : ndarray of shape (n_samples, n_features)
+        The distances between two points."
+"Generate documentation: def test_mail_to_html(
+        self,
+        mail_parser: MailDocumentParser,
+        html_email_file: Path,
+        html_email_html_file: Path,
+    ):","GIVEN:
+            - Email message with HTML content
+        WHEN:
+            - Email is parsed
+        THEN:
+            - Resulting HTML is as expected","GIVEN:
+            - Mail document is created
+        WHEN:
+            - Mail document is created
+        THEN:
+            - Email document is created
+        THEN:
+            - Email document is created"
+Generate documentation: def test_send_to_suspect_committers(self):,Test suspect committer is added as suggested assignee,"GIVEN:
+            - Suspect committers
+        WHEN:
+            - Suspect committers are sent"

@@ -42,28 +42,49 @@ class ModelAnalytics:
         """Log training metrics at each step."""
         current_time = time.time()
 
-        # Get step info if available
-        current_step = logs.get('step', self.last_step + 1)
-        steps_taken = current_step - self.last_step
+        # Handle the case where logs might have either 'step' or 'global_step'
+        current_step = logs.get('step', logs.get('global_step', 0))
 
-        # Log metrics
-        self.training_history['loss'].append(logs.get('loss', 0))
-        self.training_history['eval_loss'].append(logs.get('eval_loss', 0))
+        # Don't calculate steps_taken if we can't determine the current step
+        if current_step and self.last_step:
+            steps_taken = max(current_step - self.last_step, 1)  # Ensure at least 1 step
+        else:
+            steps_taken = 1  # Default to 1 step if we can't determine
+
+        # Log available metrics
+        if 'loss' in logs:
+            self.training_history['loss'].append(logs['loss'])
+        else:
+            # Don't append 0 for missing values - append the last known value or None
+            self.training_history['loss'].append(
+                self.training_history['loss'][-1] if self.training_history['loss'] else None
+            )
+
+        if 'eval_loss' in logs:
+            self.training_history['eval_loss'].append(logs['eval_loss'])
+        else:
+            self.training_history['eval_loss'].append(
+                self.training_history['eval_loss'][-1] if self.training_history['eval_loss'] else None
+            )
+
         self.training_history['learning_rate'].append(logs.get('learning_rate', 0))
         self.training_history['epoch'].append(epoch)
         self.training_history['timestamp'].append(current_time)
         self.training_history['steps'].append(current_step)
 
-        # Calculate seconds per step
+        # Calculate seconds per step if we have valid timing information
         if self.last_log_time and steps_taken > 0:
             time_diff = current_time - self.last_log_time
-            seconds_per_step = time_diff / steps_taken
+            # Cap the seconds per step at a reasonable maximum (e.g., 60 seconds)
+            seconds_per_step = min(time_diff / steps_taken, 60)
             self.training_history['seconds_per_step'].append(seconds_per_step)
         else:
-            self.training_history['seconds_per_step'].append(0)
+            # Use a default reasonable value instead of 0
+            self.training_history['seconds_per_step'].append(None)
 
         self.last_log_time = current_time
-        self.last_step = current_step
+        if current_step:
+            self.last_step = current_step
 
     def log_prediction(self, code_snippet: str, actual_docstring: str, predicted_docstring: str):
         """Log a prediction example for later analysis."""
@@ -171,13 +192,32 @@ class ModelAnalytics:
         if not self.training_history['loss']:
             return {"error": "No training data available"}
 
+        # Find the last valid training loss
+        final_training_loss = None
+        for loss in reversed(self.training_history['loss']):
+            if loss != 0 and loss is not None:
+                final_training_loss = loss
+                break
+
+        # Find the last valid evaluation loss
+        final_eval_loss = None
+        for loss in reversed(self.training_history['eval_loss']):
+            if loss != 0 and loss is not None:
+                final_eval_loss = loss
+                break
+
+        # Calculate a more accurate average seconds per iteration
+        valid_times = [t for t in self.training_history['seconds_per_step']
+                       if t > 0 and t < 60]  # Filter out unreasonable values
+        avg_seconds_per_iteration = sum(valid_times) / len(valid_times) if valid_times else 0
+
         stats = {
             "model_name": self.model_name,
             "training_time": self.get_training_time(),
             "epochs": max(self.training_history['epoch']) if self.training_history['epoch'] else 0,
-            "final_training_loss": self.training_history['loss'][-1] if self.training_history['loss'] else None,
-            "final_eval_loss": self.training_history['eval_loss'][-1] if self.training_history['eval_loss'] else None,
-            "average_seconds_per_iteration": self.get_average_seconds_per_step(),
+            "final_training_loss": final_training_loss,
+            "final_eval_loss": final_eval_loss,
+            "average_seconds_per_iteration": avg_seconds_per_iteration,
             "samples_analyzed": self.samples_analyzed
         }
 
