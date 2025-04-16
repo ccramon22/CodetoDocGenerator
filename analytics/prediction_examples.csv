@@ -1,153 +1,317 @@
 code,actual,predicted
-Generate documentation: def fetch_subscription_rdap_info(subscription_id: int):,"Fetches the RDAP network details for a subscriptions host and populates the
-    host_provider fields in the subscription.",Fetch the subscription rdap info for a given subscription ID.
-Generate documentation: def test_formatted_download_originals(self):,"GIVEN:
-            - Defined file naming format
-        WHEN:
-            - Bulk download request for original documents
-            - Bulk download request requests to follow format
-        THEN:
-            - Files in resulting zipfile are formatted","GIVEN:
-            - File containing originals
-        WHEN:
-            - File containing originals are formatted
-        THEN:
-            - File containing originals are formatted
-        THEN:
-            - File containing originals are formatted"
-"Generate documentation: def _generalized_average(U, V, average_method):",Return a particular mean of two numbers.,"Compute the average value of U and V.
+"Generate documentation: def _map_infrequent_categories(self, X_int, X_mask, ignore_category_indices):","Map infrequent categories to integer representing the infrequent category.
 
-    Parameters
-    ----------
-    U : {array-like, sparse matrix} of shape (n_samples, n_features)
-        The input data.
-
-    V : array-like of shape (n_samples, n_features)
-        The output data.
-
-    average_method : callable
-        The average method to use.
-
-    Returns
-    -------
-    average : ndarray of shape (n_samples, n_features)
-        The average value."
-Generate documentation: def test_weighted_percentile_equal():,Check `weighted_percentile` with all weights equal to 1.,"GIVEN:
-            - A weighted percentile
-        WHEN:
-            - A weighted percentile is equal
-        THEN:
-            - A weighted percentile is equal
-        THEN:
-            - A weighted percentile is equal"
-Generate documentation: def clock_pulse(current_datetime=None):,"This task is run once a minute when to produce 'clock pulses' into the
-    monitor ingest topic. This is to ensure there is always a message in the
-    topic that can drive all partition clocks, which dispatch monitor tasks.","Clock pulse.
-
-    Parameters
-    ----------
-    current_datetime : datetime, default=None
-        Current datetime.
-
-    Returns
-    -------
-    clock_pulse : float
-        The clock pulse."
-"Generate documentation: def predict_proba(self, X):","Return prediction probabilities for each class of each output.
-
-        This method will raise a ``ValueError`` if any of the
-        estimators do not have ``predict_proba``.
+        This modifies X_int in-place. Values that were invalid based on `X_mask`
+        are mapped to the infrequent category if there was an infrequent
+        category for that feature.
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
+        X_int: ndarray of shape (n_samples, n_features)
+            Integer encoded categories.
+
+        X_mask: ndarray of shape (n_samples, n_features)
+            Bool mask for valid values in `X_int`.
+
+        ignore_category_indices : dict
+            Dictionary mapping from feature_idx to category index to ignore.
+            Ignored indexes will not be grouped and the original ordinal encoding
+            will remain.","Map infrequent categories to feature mask.
+
+        Parameters
+        ----------
+        X_int : ndarray of shape (n_samples, n_features)
+            The input data.
+
+        X_mask : ndarray of shape (n_features, n_features)
+            The mask of the infrequent categories.
+
+        ignore_category_indices : bool
+            Ignored.
+
+        Returns
+        -------
+        categories : ndarray of shape (n_categories,)
+            The infrequent categories."
+"Generate documentation: def export_text(
+    decision_tree,
+    *,
+    feature_names=None,
+    class_names=None,
+    max_depth=10,
+    spacing=3,
+    decimals=2,
+    show_weights=False,
+):","Build a text report showing the rules of a decision tree.
+
+    Note that backwards compatibility may not be supported.
+
+    Parameters
+    ----------
+    decision_tree : object
+        The decision tree estimator to be exported.
+        It can be an instance of
+        DecisionTreeClassifier or DecisionTreeRegressor.
+
+    feature_names : array-like of shape (n_features,), default=None
+        An array containing the feature names.
+        If None generic names will be used (""feature_0"", ""feature_1"", ...).
+
+    class_names : array-like of shape (n_classes,), default=None
+        Names of each of the target classes in ascending numerical order.
+        Only relevant for classification and not supported for multi-output.
+
+        - if `None`, the class names are delegated to `decision_tree.classes_`;
+        - otherwise, `class_names` will be used as class names instead of
+          `decision_tree.classes_`. The length of `class_names` must match
+          the length of `decision_tree.classes_`.
+
+        .. versionadded:: 1.3
+
+    max_depth : int, default=10
+        Only the first max_depth levels of the tree are exported.
+        Truncated branches will be marked with ""..."".
+
+    spacing : int, default=3
+        Number of spaces between edges. The higher it is, the wider the result.
+
+    decimals : int, default=2
+        Number of decimal digits to display.
+
+    show_weights : bool, default=False
+        If true the classification weights will be exported on each leaf.
+        The classification weights are the number of samples each class.
+
+    Returns
+    -------
+    report : str
+        Text summary of all the rules in the decision tree.
+
+    Examples
+    --------
+
+    >>> from sklearn.datasets import load_iris
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from sklearn.tree import export_text
+    >>> iris = load_iris()
+    >>> X = iris['data']
+    >>> y = iris['target']
+    >>> decision_tree = DecisionTreeClassifier(random_state=0, max_depth=2)
+    >>> decision_tree = decision_tree.fit(X, y)
+    >>> r = export_text(decision_tree, feature_names=iris['feature_names'])
+    >>> print(r)
+    |--- petal width (cm) <= 0.80
+    |   |--- class: 0
+    |--- petal width (cm) >  0.80
+    |   |--- petal width (cm) <= 1.75
+    |   |   |--- class: 1
+    |   |--- petal width (cm) >  1.75
+    |   |   |--- class: 2","Export a decision tree to a text representation.
+
+    The text representation is described in [1]_.
+
+    Read more in the :ref:`User Guide <text_extraction>`.
+
+    Parameters
+    ----------
+    decision_tree : DecisionTree instance
+        The decision tree to export.
+
+    feature_names : array-like of str or None, default=None
+        The names of all feature names to export. If `None`, all class names will be exported.
+
+    class_names : array-like of str or None, default=None
+        Names of all class names to export. If `None`, all class names will be exported.
+
+    max"
+"Generate documentation: def predict(self, T):","Predict new data by linear interpolation.
+
+        Parameters
+        ----------
+        T : array-like of shape (n_samples,)
+            Data to predict from.
+
+        Returns
+        -------
+        T_ : ndarray of shape (n_samples,)
+            The predicted data.","Predict class for T.
+
+        Parameters
+        ----------
+        T : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input data.
 
         Returns
         -------
-        p : array of shape (n_samples, n_classes), or a list of n_outputs \
-                such arrays if n_outputs > 1.
-            The class probabilities of the input samples. The order of the
-            classes corresponds to that in the attribute :term:`classes_`.
-
-            .. versionchanged:: 0.19
-                This function now returns a list of arrays where the length of
-                the list is ``n_outputs``, and each array is (``n_samples``,
-                ``n_classes``) for that particular output.","Predict probability of X.
+        y : ndarray of shape (n_samples,)
+            The predicted class for each sample."
+"Generate documentation: def _plot_two_way_partial_dependence(
+        self,
+        avg_preds,
+        feature_values,
+        feature_idx,
+        ax,
+        pd_plot_idx,
+        Z_level,
+        contour_kw,
+        categorical,
+        heatmap_kw,
+    ):","Plot 2-way partial dependence.
 
         Parameters
         ----------
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
-            Training data.
+        avg_preds : ndarray of shape \
+                (n_instances, n_grid_points, n_grid_points)
+            The average predictions for all points of `feature_values[0]` and
+            `feature_values[1]` for some given features for all samples in `X`.
+        feature_values : seq of 1d array
+            A sequence of array of the feature values for which the predictions
+            have been computed.
+        feature_idx : tuple of int
+            The indices of the target features
+        ax : Matplotlib axes
+            The axis on which to plot the ICE and PDP lines.
+        pd_plot_idx : int
+            The sequential index of the plot. It will be unraveled to find the
+            matching 2D position in the grid layout.
+        Z_level : ndarray of shape (8, 8)
+            The Z-level used to encode the average predictions.
+        contour_kw : dict
+            Dict with keywords passed when plotting the contours.
+        categorical : bool
+            Whether features are categorical.
+        heatmap_kw: dict
+            Dict with keywords passed when plotting the PD heatmap
+            (categorical).","Plot two-way partial dependence.
 
-        Returns
-        -------
-        probability : ndarray of shape (n_samples, n_features)
-            Predict probability of X."
-Generate documentation: def test_check_boundary_response_method_error():,"Check error raised for multi-output multi-class classifiers by
-    `_check_boundary_response_method`.","GIVEN:
-            - Request to check boundary response method
-        WHEN:
-            - Request to check boundary response method is called
-        THEN:
-            - Request to check boundary response method is called"
-"Generate documentation: def paired_euclidean_distances(X, Y):","Compute the paired euclidean distances between X and Y.
+        Parameters
+        ----------
+        avg_preds : ndarray of shape (n_samples,)
+            Average predictions for a given feature.
+        feature_values : ndarray of shape (n_features,)
+            Feature values for which the partial dependence is computed.
+        feature_idx : int
+            Index of the feature in which the partial dependence is computed.
+        ax : Matplotlib axes
+            The axis on which the partial dependence is computed.
+        feature_values : ndarray of shape (n_features,)
+            The feature in which the partial dependence is computed.
+        pd_plot_idx : int
+"
+"Generate documentation: def make_sparse_uncorrelated(n_samples=100, n_features=10, *, random_state=None):","Generate a random regression problem with sparse uncorrelated design.
 
-    Read more in the :ref:`User Guide <metrics>`.
+    This dataset is described in Celeux et al [1]. as::
+
+        X ~ N(0, 1)
+        y(X) = X[:, 0] + 2 * X[:, 1] - 2 * X[:, 2] - 1.5 * X[:, 3]
+
+    Only the first 4 features are informative. The remaining features are
+    useless.
+
+    Read more in the :ref:`User Guide <sample_generators>`.
 
     Parameters
     ----------
-    X : {array-like, sparse matrix} of shape (n_samples, n_features)
-        Input array/matrix X.
+    n_samples : int, default=100
+        The number of samples.
 
-    Y : {array-like, sparse matrix} of shape (n_samples, n_features)
-        Input array/matrix Y.
+    n_features : int, default=10
+        The number of features.
+
+    random_state : int, RandomState instance or None, default=None
+        Determines random number generation for dataset creation. Pass an int
+        for reproducible output across multiple function calls.
+        See :term:`Glossary <random_state>`.
 
     Returns
     -------
-    distances : ndarray of shape (n_samples,)
-        Output array/matrix containing the calculated paired euclidean
-        distances.
+    X : ndarray of shape (n_samples, n_features)
+        The input samples.
+
+    y : ndarray of shape (n_samples,)
+        The output values.
+
+    References
+    ----------
+    .. [1] G. Celeux, M. El Anbari, J.-M. Marin, C. P. Robert,
+           ""Regularization in regression: comparing Bayesian and frequentist
+           methods in a poorly informative situation"", 2009.
 
     Examples
     --------
-    >>> from sklearn.metrics.pairwise import paired_euclidean_distances
-    >>> X = [[0, 0, 0], [1, 1, 1]]
-    >>> Y = [[1, 0, 0], [1, 1, 0]]
-    >>> paired_euclidean_distances(X, Y)
-    array([1., 1.])","Compute the distances between two points.
+    >>> from sklearn.datasets import make_sparse_uncorrelated
+    >>> X, y = make_sparse_uncorrelated(random_state=0)
+    >>> X.shape
+    (100, 10)
+    >>> y.shape
+    (100,)","Generate a sparse uncorrelated dataset.
+
+    Read more in the :ref:`User Guide <sample_generators>`.
 
     Parameters
     ----------
-    X : {array-like, sparse matrix} of shape (n_samples, n_features)
-        Training data.
+    n_samples : int, default=100
+        The number of samples.
 
-    Y : array-like of shape (n_samples, n_features)
-        Target data.
+    n_features : int, default=10
+        The number of features.
+
+    random_state : int, RandomState instance or None, default=None
+        Determines random number generation for dataset creation. Pass an int
+        for reproducible output across multiple function calls.
+        See :term:`Glossary <random_state>`.
 
     Returns
     -------
-    distances : ndarray of shape (n_samples, n_features)
-        The distances between two points."
-"Generate documentation: def test_mail_to_html(
-        self,
-        mail_parser: MailDocumentParser,
-        html_email_file: Path,
-        html_email_html_file: Path,
-    ):","GIVEN:
-            - Email message with HTML content
+    X : sparse matrix of shape (n_samples,"
+Generate documentation: def is_sdk_failure(self):,An error that most likely happened because of a bad SDK.,Returns True if the SDK error is a sdk failure
+"Generate documentation: def _get_feature_index(fx, feature_names=None):","Get feature index.
+
+    Parameters
+    ----------
+    fx : int or str
+        Feature index or name.
+
+    feature_names : list of str, default=None
+        All feature names from which to search the indices.
+
+    Returns
+    -------
+    idx : int
+        Feature index.","Get feature index.
+
+    Parameters
+    ----------
+    fx : callable
+        Function to get feature index.
+
+    feature_names : array-like of str or None, default=None
+        Name of feature names.
+
+    Returns
+    -------
+    feature_index : ndarray of shape (n_features,)
+        Feature index."
+"Generate documentation: def test_partial_dependence_kind_list(
+    pyplot,
+    clf_diabetes,
+    diabetes,
+):",Check that we can provide a list of strings to kind parameter.,Check the behaviour of the `partial_dependence_kind` parameter.
+Generate documentation: def test_uninstall_single_configuration(self):,"Test uninstalling an integration with only one organization
+        associated with it.","GIVEN:
+            - Existing configuration
         WHEN:
-            - Email is parsed
+            - API request is made to uninstall a configuration
         THEN:
-            - Resulting HTML is as expected","GIVEN:
-            - Mail document is created
+            - The configuration is removed"
+"Generate documentation: def test_workflow_webhook_action_w_files(self, mock_post):","GIVEN:
+            - Document updated workflow with webhook action which includes document
         WHEN:
-            - Mail document is created
+            - Document that matches is updated
         THEN:
-            - Email document is created
-        THEN:
-            - Email document is created"
-Generate documentation: def test_send_to_suspect_committers(self):,Test suspect committer is added as suggested assignee,"GIVEN:
-            - Suspect committers
+            - Webhook is sent with file","GIVEN:
+            - Document updated workflow with webhook action
         WHEN:
-            - Suspect committers are sent"
+            - Document that matches is updated
+        THEN:
+            - Document that matches is updated"

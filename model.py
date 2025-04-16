@@ -3,11 +3,11 @@ from transformers import Trainer, TrainingArguments
 from datasets import Dataset
 import torch
 import os
-from analytics import ModelAnalytics, LoggingCallback
+from analytics import TrainingAnalytics, AnalyticsCallback
 from evaluation import generate_documentation
 
 
-def load_model_and_tokenizer(model_name="Salesforce/codet5-small"):
+def load_model_and_tokenizer(model_name="Salesforce/codet5-base"):
     """Load pretrained CodeT5 model and tokenizer."""
     print(f"Checking if model {model_name} is already downloaded...")
 
@@ -59,11 +59,10 @@ def tokenize_and_prepare(examples, tokenizer, max_length=512):
     return model_inputs
 
 
-def train_documentation_model(df, model_name="Salesforce/codet5-small", output_dir="./codet5_documentation_generator"):
+def train_documentation_model(df, model_name="Salesforce/codet5-base", output_dir="./codet5_documentation_generator"):
     """Train the documentation generation model."""
     # Create analytics object
-    analytics = ModelAnalytics(model_name)
-    analytics.start_tracking()
+    analytics = TrainingAnalytics()
 
     # Create dataset
     print('Creating Dataset')
@@ -96,11 +95,11 @@ def train_documentation_model(df, model_name="Salesforce/codet5-small", output_d
     training_args = TrainingArguments(
         output_dir="./training_results",
         evaluation_strategy="epoch",
-        learning_rate=5e-5,
-        per_device_train_batch_size=4,  # Reasonable size for CPU
-        per_device_eval_batch_size=4,
-        gradient_accumulation_steps=2,
-        num_train_epochs=3,  # Reduced epochs for faster testing
+        learning_rate=7e-5,
+        per_device_train_batch_size=16,  # Reasonable size for CPU
+        per_device_eval_batch_size=16,
+        gradient_accumulation_steps=1,
+        num_train_epochs=5,  # Reduce epochs for faster testing
         weight_decay=0.01,
         save_total_limit=3,
     )
@@ -111,31 +110,35 @@ def train_documentation_model(df, model_name="Salesforce/codet5-small", output_d
         args=training_args,
         train_dataset=train_test_split["train"],
         eval_dataset=train_test_split["test"],
-        callbacks=[LoggingCallback(analytics)]
+        callbacks=[AnalyticsCallback(analytics)]
     )
 
     # Train model
     trainer.train()
 
-    # Log end of training
-    analytics.end_tracking()
+    # End training analytics
+    analytics.end_training()
 
     # Save model
     model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)
 
-    # Generate some example predictions for visualization
+    # Generate some example predictions for analysis
     print("Generating sample predictions for analysis...")
     test_examples = train_test_split["test"].select(range(min(10, len(train_test_split["test"]))))
+
     for example in test_examples:
         code_snippet = example["input"]
-        actual_docstring = example["target"]
-        predicted_docstring = generate_documentation(code_snippet, model, tokenizer)
-        analytics.log_prediction(code_snippet, actual_docstring, predicted_docstring)
+        generated_doc = generate_documentation(code_snippet, model, tokenizer)
+        # The new analytics doesn't have a log_prediction method, but we could add one
+        # or just print the predictions for now
+        print("\nCode snippet:", code_snippet[:100] + "..." if len(code_snippet) > 100 else code_snippet)
+        print("\nGenerated documentation:", generated_doc)
 
     # Create analytics dashboard for presentation
     print("Creating analytics dashboard...")
-    analytics.create_presentation_dashboard()
+    # This is automatically done in end_training()
+
     print("Analytics dashboard created in ./analytics directory")
 
     return model, tokenizer, analytics

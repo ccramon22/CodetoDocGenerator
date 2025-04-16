@@ -1,0 +1,9 @@
+#Virtual environment
+.venv\
+
+.idea/
+
+github_repos/
+training_results/
+codet5_documentation_generator_beta/
+codet5_documentation_generator/
