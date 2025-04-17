@@ -6,14 +6,7 @@ import os
 from analytics import TrainingAnalytics, AnalyticsCallback
 from evaluation import generate_documentation
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 
->>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b
-=======
-
->>>>>>> 806a7338ee1237c78f038b6f23c23feb7b317a04
 def load_model_and_tokenizer(model_name="Salesforce/codet5-base"):
     """Load pretrained CodeT5 model and tokenizer."""
     print(f"Checking if model {model_name} is already downloaded...")
@@ -66,8 +59,6 @@ def tokenize_and_prepare(examples, tokenizer, max_length=512):
     return model_inputs
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 def train_documentation_model(df, model_name="Salesforce/codet5-base", output_dir="./codet5_documentation_generator",
                               force_intel=False):
     """Train the documentation generation model.
@@ -80,6 +71,9 @@ def train_documentation_model(df, model_name="Salesforce/codet5-base", output_di
     """
     import sys
     import torch
+
+    # Create analytics object
+    analytics = TrainingAnalytics()
 
     # Determine which device to use
     if force_intel:
@@ -131,17 +125,6 @@ def train_documentation_model(df, model_name="Salesforce/codet5-base", output_di
                 print("No GPU found, using CPU")
                 use_fp16 = False
                 use_bf16 = False
-=======
-=======
->>>>>>> 806a7338ee1237c78f038b6f23c23feb7b317a04
-def train_documentation_model(df, model_name="Salesforce/codet5-base", output_dir="./codet5_documentation_generator"):
-    """Train the documentation generation model."""
-    # Create analytics object
-    analytics = TrainingAnalytics()
-<<<<<<< HEAD
->>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b
-=======
->>>>>>> 806a7338ee1237c78f038b6f23c23feb7b317a04
 
     # Create dataset
     print('Creating Dataset')
@@ -150,10 +133,6 @@ def train_documentation_model(df, model_name="Salesforce/codet5-base", output_di
     # Load model and tokenizer
     print('Loading Model and Tokenizer')
     model, tokenizer = load_model_and_tokenizer(model_name)
-
-    # Force CPU usage to avoid GPU issues
-    device = torch.device("cpu")
-    print("Using CPU for training")
 
     # Move model to the appropriate device
     model = model.to(device)
@@ -169,38 +148,18 @@ def train_documentation_model(df, model_name="Salesforce/codet5-base", output_di
     print('Splitting dataset for training and testing')
     train_test_split = tokenized_dataset.train_test_split(test_size=0.1)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     # Set batch size based on device
-    batch_size = 4
+    batch_size = 4 if device.type != "cpu" else 16
 
-=======
->>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b
-=======
->>>>>>> 806a7338ee1237c78f038b6f23c23feb7b317a04
     # Set up training arguments
     print('Setting up training parameters')
     training_args = TrainingArguments(
         output_dir="./training_results",
         evaluation_strategy="epoch",
-<<<<<<< HEAD
-<<<<<<< HEAD
         learning_rate=5e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        num_train_epochs=2,
-=======
-=======
->>>>>>> 806a7338ee1237c78f038b6f23c23feb7b317a04
-        learning_rate=7e-5,
-        per_device_train_batch_size=16,  # Reasonable size for CPU
-        per_device_eval_batch_size=16,
-        gradient_accumulation_steps=1,
-        num_train_epochs=5,  # Reduce epochs for faster testing
-<<<<<<< HEAD
->>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b
-=======
->>>>>>> 806a7338ee1237c78f038b6f23c23feb7b317a04
+        num_train_epochs=5,
         weight_decay=0.01,
         save_total_limit=3,
     )
