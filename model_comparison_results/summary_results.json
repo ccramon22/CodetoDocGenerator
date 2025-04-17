@@ -1,24 +1,34 @@
 {
-  "codet5-base": {
-    "model_size_mb": 850.2275390625,
-    "avg_rouge1": 0.09880952380952382,
+  "codet5-large": {
+    "model_size_mb": 2813.87109375,
+    "avg_rouge1": 0.1314420803782506,
     "avg_rouge2": 0.0,
-    "avg_rougeL": 0.09880952380952382,
-    "avg_bleu": 0.0008447733076931505,
-    "avg_generation_time": 1.1813541650772095
+    "avg_rougeL": 0.1314420803782506,
+    "avg_bleu": 0.018945828488108475,
+    "avg_generation_time": 10.010627746582031
   },
   "llama3-8b": {
-    "avg_rouge1": 0.0,
-    "avg_rouge2": 0.0,
-    "avg_rougeL": 0.0,
-    "avg_bleu": 0.0016724211682310722,
-    "avg_generation_time": 0.0
+    "model_size_mb": 15316.508056640625,
+    "avg_rouge1": 0.35101010101010105,
+    "avg_rouge2": 0.2639455782312925,
+    "avg_rougeL": 0.3257575757575758,
+    "avg_bleu": 0.09675787807143368,
+    "avg_generation_time": 42.82569444179535
   },
   "mistral-7b-v0.3": {
-    "avg_rouge1": 0.0,
-    "avg_rouge2": 0.0,
-    "avg_rougeL": 0.0,
-    "avg_bleu": 0.0016724211682310722,
-    "avg_generation_time": 0.0
+    "model_size_mb": 13824.508056640625,
+    "avg_rouge1": 0.41645493042952203,
+    "avg_rouge2": 0.25439595192915876,
+    "avg_rougeL": 0.3934664246823956,
+    "avg_bleu": 0.12018994776001472,
+    "avg_generation_time": 52.29268741607666
+  },
+  "starcoder2-7b": {
+    "model_size_mb": 13683.174072265625,
+    "avg_rouge1": 0.3194683495888315,
+    "avg_rouge2": 0.12624452409398645,
+    "avg_rougeL": 0.27156244023713905,
+    "avg_bleu": 0.03784534400428034,
+    "avg_generation_time": 71.51007783412933
   }
 }

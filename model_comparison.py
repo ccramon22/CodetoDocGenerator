@@ -27,18 +27,23 @@ class ModelComparer:
 
         # Define models to compare
         self.models_config = {
-            "codet5-base": {
-                "model_id": "Salesforce/codet5-base",
+            "codet5-large": {
+                "model_id": "Salesforce/codet5-large",
                 "model_type": "t5",
                 "max_length": 512
             },
             "llama3-8b": {
-                "model_id": "meta-llama/Meta-Llama-3-8B",
+                "model_id": "meta-llama/Llama-3.1-8B",
                 "model_type": "causal",
                 "max_length": 2048
             },
             "mistral-7b-v0.3": {
                 "model_id": "mistralai/Mistral-7B-v0.3",
+                "model_type": "causal",
+                "max_length": 2048
+            },
+            "starcoder2-7b": {
+                "model_id": "bigcode/starcoder2-7b",
                 "model_type": "causal",
                 "max_length": 2048
             }
@@ -60,22 +65,24 @@ class ModelComparer:
     def load_model(self, model_name):
         """Load a specific model and tokenizer"""
         config = self.models_config[model_name]
-        print(f"Loading {model_name}...")
+        print(f"\nLoading {model_name}...")
 
         try:
             if config["model_type"] == "t5":
-                tokenizer = RobertaTokenizer.from_pretrained(config["model_id"], use_auth_token=self.hf_token)
-                model = T5ForConditionalGeneration.from_pretrained(config["model_id"], use_auth_token=self.hf_token)
+                tokenizer = RobertaTokenizer.from_pretrained(config["model_id"], token=self.hf_token)
+                model = T5ForConditionalGeneration.from_pretrained(config["model_id"], token=self.hf_token)
+                model = model.to(self.device)
             else:
-                tokenizer = AutoTokenizer.from_pretrained(config["model_id"], use_auth_token=self.hf_token)
+                tokenizer = AutoTokenizer.from_pretrained(config["model_id"], token=self.hf_token)
+                # For large models, let accelerate handle device placement
                 model = AutoModelForCausalLM.from_pretrained(
                     config["model_id"],
                     torch_dtype=torch.float16,
                     device_map="auto",
-                    use_auth_token=self.hf_token
+                    token=self.hf_token
                 )
+                # Don't move the model manually when using device_map
 
-            model = model.to(self.device)
             model_size_mb = self._get_model_size(model)
             self.results[model_name]["model_size_mb"] = model_size_mb
             print(f"Model size: {model_size_mb:.2f} MB")
@@ -94,15 +101,15 @@ class ModelComparer:
     def prepare_test_cases(self, num_examples=10):
         """Prepare test cases with non-descriptive function names"""
         self.test_cases = [
-            {
-                "code": "def func1(numbers):\n    total = sum(numbers)\n    return total / len(numbers)",
-                "reference_doc": "Calculate the average of a list of numbers.\n\nParameters:\n    numbers (list): A list of numbers\n\nReturns:\n    float: The average of the numbers"
-            },
-            {
-                "code": "def func2(dict1, dict2):\n    result = dict1.copy()\n    result.update(dict2)\n    return result",
-                "reference_doc": "Merge two dictionaries into a new dictionary.\n\nParameters:\n    dict1 (dict): The first dictionary\n    dict2 (dict): The second dictionary\n\nReturns:\n    dict: A new dictionary containing all key-value pairs from both input dictionaries"
-            },
-        ][:num_examples]
+                              {
+                                  "code": "def func1(numbers):\n    total = sum(numbers)\n    return total / len(numbers)",
+                                  "reference_doc": "Calculate the average of a list of numbers.\n\nParameters:\n    numbers (list): A list of numbers\n\nReturns:\n    float: The average of the numbers"
+                              },
+                              {
+                                  "code": "def func2(dict1, dict2):\n    result = dict1.copy()\n    result.update(dict2)\n    return result",
+                                  "reference_doc": "Merge two dictionaries into a new dictionary.\n\nParameters:\n    dict1 (dict): The first dictionary\n    dict2 (dict): The second dictionary\n\nReturns:\n    dict: A new dictionary containing all key-value pairs from both input dictionaries"
+                              },
+                          ][:num_examples]
 
     def generate_documentation(self, model_name, code):
         """Generate documentation for a code snippet using the specified model"""
@@ -137,6 +144,12 @@ Documentation:
                 generated_doc = generated_text.split("Documentation:")[1].strip()
 
             generation_time = time.time() - start_time
+
+            # Free memory
+            del model, tokenizer
+            gc.collect()
+            torch.cuda.empty_cache()
+
             return generated_doc, generation_time
         except Exception as e:
             print(f"Error generating documentation with {model_name}: {e}")
@@ -205,6 +218,9 @@ Documentation:
         with open(os.path.join(self.output_dir, "summary_results.json"), "w") as f:
             json.dump(self.results, f, indent=2)
 
+        # Generate visualizations
+        self.visualize_results()
+
     def visualize_results(self):
         """Generate visualizations for the model comparison results"""
         summary_results_path = os.path.join(self.output_dir, "summary_results.json")
@@ -216,30 +232,180 @@ Documentation:
             results = json.load(f)
 
         models = list(results.keys())
-        metrics = ["avg_rouge1", "avg_rouge2", "avg_rougeL", "avg_bleu", "avg_generation_time"]
 
-        data = {metric: [results[model][metric] for model in models] for metric in metrics}
+        # 1. Response Time Chart
+        self._plot_response_time_chart(models, results)
 
-        self._plot_bar_chart(models, metrics, data)
+        # 2. Model Size Chart
+        self._plot_model_size_chart(models, results)
 
-    def _plot_bar_chart(self, models, metrics, data):
-        """Plot a bar chart with metrics"""
+        # 3. Quality Metrics Radar Chart
+        self._plot_quality_radar_chart(models, results)
+
+        # 4. Efficiency Analysis
+        self._plot_efficiency_chart(models, results)
+
+        # 5. Metric Bar Charts
+        metrics = ["avg_rouge1", "avg_rouge2", "avg_rougeL", "avg_bleu"]
+        self._plot_metric_bar_charts(models, metrics, results)
+
+        # 6. Trade-off Analysis
+        self._plot_tradeoff_chart(models, results)
+
+        print(f"Visualizations saved to {self.output_dir}")
+
+    def _plot_response_time_chart(self, models, results):
+        """Plot response time comparison chart"""
+        plt.figure(figsize=(10, 6))
+        response_times = [results[model]["avg_generation_time"] for model in models]
+
+        plt.bar(models, response_times, color='skyblue')
+        plt.title('Model Response Time Comparison')
+        plt.xlabel('Models')
+        plt.ylabel('Average Generation Time (seconds)')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir, "response_time_chart.png"))
+        plt.close()
+
+    def _plot_model_size_chart(self, models, results):
+        """Plot model size comparison chart"""
+        plt.figure(figsize=(10, 6))
+        sizes = [results[model]["model_size_mb"] for model in models]
+
+        plt.bar(models, sizes, color='lightgreen')
+        plt.title('Model Size Comparison')
+        plt.xlabel('Models')
+        plt.ylabel('Size (MB)')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir, "model_size_chart.png"))
+        plt.close()
+
+    def _plot_quality_radar_chart(self, models, results):
+        """Plot quality metrics radar chart"""
+        metrics = ["avg_rouge1", "avg_rouge2", "avg_rougeL", "avg_bleu"]
+
+        # Convert to matplotlib format for radar chart
+        angles = np.linspace(0, 2 * np.pi, len(metrics), endpoint=False).tolist()
+        angles += angles[:1]  # Close the loop
+
+        fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+
+        for model in models:
+            values = [results[model][metric] for metric in metrics]
+            values += values[:1]  # Close the loop
+
+            ax.plot(angles, values, linewidth=2, label=model)
+            ax.fill(angles, values, alpha=0.1)
+
+        ax.set_thetagrids(np.degrees(angles[:-1]), metrics)
+        ax.set_ylim(0, 1)
+        plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+        plt.title('Model Quality Metrics Comparison', y=1.1)
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir, "quality_radar_chart.png"))
+        plt.close()
+
+    def _plot_efficiency_chart(self, models, results):
+        """Plot efficiency analysis chart"""
+        plt.figure(figsize=(12, 8))
+
+        # Calculate quality score (average of metrics)
+        quality_scores = []
+        size_efficiency = []
+        time_efficiency = []
+
+        for model in models:
+            quality = (results[model]["avg_rouge1"] +
+                       results[model]["avg_rouge2"] +
+                       results[model]["avg_rougeL"] +
+                       results[model]["avg_bleu"]) / 4
+
+            quality_scores.append(quality)
+            # Quality per MB (scaled)
+            size_efficiency.append((quality / results[model]["model_size_mb"]) * 10000)
+            # Quality per second (scaled)
+            time_efficiency.append((quality / results[model]["avg_generation_time"]) * 100)
+
+        # Plot as subplots
+        plt.subplot(2, 1, 1)
+        plt.bar(models, size_efficiency, color='coral')
+        plt.title('Size Efficiency (Quality per MB)')
+        plt.xticks(rotation=45)
+
+        plt.subplot(2, 1, 2)
+        plt.bar(models, time_efficiency, color='purple')
+        plt.title('Time Efficiency (Quality per Second)')
+        plt.xticks(rotation=45)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir, "efficiency_chart.png"))
+        plt.close()
+
+    def _plot_metric_bar_charts(self, models, metrics, results):
+        """Plot individual bar charts for each metric"""
         for metric in metrics:
-            values = data[metric]
-            plt.bar(models, values, alpha=0.7, label=metric)
+            plt.figure(figsize=(10, 6))
+            values = [results[model][metric] for model in models]
 
-        plt.title("Model Comparison Bar Chart")
-        plt.xlabel("Models")
-        plt.ylabel("Scores")
-        plt.legend()
-        plt.show()
+            plt.bar(models, values, alpha=0.7)
+            plt.title(f'{metric.replace("avg_", "").upper()} Score Comparison')
+            plt.xlabel('Models')
+            plt.ylabel('Score')
+            plt.xticks(rotation=45)
+            plt.ylim(0, 1)
+            plt.tight_layout()
+            plt.savefig(os.path.join(self.output_dir, f"{metric}_chart.png"))
+            plt.close()
+
+    def _plot_tradeoff_chart(self, models, results):
+        """Plot trade-off analysis chart"""
+        plt.figure(figsize=(12, 8))
+
+        # Extract data
+        sizes = [results[model]["model_size_mb"] for model in models]
+        times = [results[model]["avg_generation_time"] for model in models]
+
+        # Calculate quality scores
+        quality_scores = []
+        for model in models:
+            quality = (results[model]["avg_rouge1"] +
+                       results[model]["avg_rouge2"] +
+                       results[model]["avg_rougeL"] +
+                       results[model]["avg_bleu"]) / 4
+            quality_scores.append(quality * 5000)  # Scale for visibility
+
+        # Create scatter plot with custom sizes
+        plt.scatter(times, sizes, s=quality_scores, alpha=0.6)
+
+        # Add labels for each point
+        for i, model in enumerate(models):
+            plt.annotate(model, (times[i], sizes[i]),
+                         textcoords="offset points",
+                         xytext=(0, 10),
+                         ha='center')
+
+        plt.title('Model Trade-offs: Size vs Speed vs Quality')
+        plt.xlabel('Response Time (seconds)')
+        plt.ylabel('Model Size (MB)')
+        plt.grid(True, linestyle='--', alpha=0.7)
+
+        # Add a legend/explanation
+        plt.figtext(0.5, 0.01,
+                    "Bubble size represents quality score (larger is better)",
+                    ha="center", fontsize=10)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir, "tradeoff_chart.png"))
+        plt.close()
 
 
 def main():
     comparer = ModelComparer()
     comparer.prepare_test_cases(num_examples=5)
     comparer.evaluate_models()
-    comparer.visualize_results()
+    # Visualization is now automatically called within evaluate_models
 
 
 if __name__ == "__main__":

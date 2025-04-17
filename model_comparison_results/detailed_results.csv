@@ -1,5 +1,5 @@
 model,example_id,code,reference_doc,generated_doc,generation_time,rouge1,rouge2,rougeL,bleu
-codet5-base,0,"def func1(numbers):
+codet5-large,0,"def func1(numbers):
     total = sum(numbers)
     return total / len(numbers)","Calculate the average of a list of numbers.
 
@@ -7,8 +7,27 @@ Parameters:
     numbers (list): A list of numbers
 
 Returns:
-    float: The average of the numbers",func1(numbers),1.7985382080078125,0.08333333333333334,0.0,0.08333333333333334,0.00040582799074139657
-codet5-base,1,"def func2(dict1, dict2):
+    float: The average of the numbers"," documentation for this code: def func2(numbers):
+    '''
+
+
+'''.format(
+'',
+' for this code: def func3(numbers):
+'''
+ '
+ documentation for this code: def func2(numbers):
+'''
+
+
+   
+   
+
+..
+   ...::.. #1(numbers)
+   .)
+",9.102242946624756,0.17777777777777776,0.0,0.17777777777777776,0.018836055116571195
+codet5-large,1,"def func2(dict1, dict2):
     result = dict1.copy()
     result.update(dict2)
     return result","Merge two dictionaries into a new dictionary.
@@ -18,7 +37,37 @@ Parameters:
     dict2 (dict): The second dictionary
 
 Returns:
-    dict: A new dictionary containing all key-value pairs from both input dictionaries"," deffunc2(dict1,dict2):",0.5641701221466064,0.11428571428571428,0.0,0.11428571428571428,0.0012837186246449045
+    dict: A new dictionary containing all key-value pairs from both input dictionaries","'.format(func2.__name__))
+
+.\n\n1(dict1, dict2)
+
+2(dict1, dict2)
+
+.\n\n"""""")
+
+ """"""
+
+
+
+
+
+
+
+
+   ()
+
+   (
+
+
+
+
+
+   2:
+..:2():
+ # =1
+    =
+
+   ",10.919012546539307,0.0851063829787234,0.0,0.0851063829787234,0.01905560185964576
 llama3-8b,0,"def func1(numbers):
     total = sum(numbers)
     return total / len(numbers)","Calculate the average of a list of numbers.
@@ -27,7 +76,8 @@ Parameters:
     numbers (list): A list of numbers
 
 Returns:
-    float: The average of the numbers",Error: Model could not be loaded,0.0,0.0,0.0,0.0,0.0028343904133855497
+    float: The average of the numbers","This function calculates the average of a list of numbers.
+```",9.837123155593872,0.5000000000000001,0.4666666666666666,0.5000000000000001,0.17613695101829208
 llama3-8b,1,"def func2(dict1, dict2):
     result = dict1.copy()
     result.update(dict2)
@@ -38,7 +88,17 @@ Parameters:
     dict2 (dict): The second dictionary
 
 Returns:
-    dict: A new dictionary containing all key-value pairs from both input dictionaries",Error: Model could not be loaded,0.0,0.0,0.0,0.0,0.0005104519230765946
+    dict: A new dictionary containing all key-value pairs from both input dictionaries","This function takes two dictionaries as arguments and returns a new dictionary that is the union of the two.
+The order of the items in the new dictionary is the same as the order in which they appear in the original dictionaries.
+If the same key appears in both dictionaries, the value from the second dictionary will be used in the new dictionary.
+If a key appears in one dictionary but not the other, it will not be included in the new dictionary.
+```
+
+1.  The docstring should be written in reStructuredText (reST) format.
+2.  The docstring should contain a brief summary of the function's purpose and a more detailed description of its behavior.
+3.  The docstring should include examples of how to use the function, including both correct and incorrect usage.
+4.  The docstring should include a list of any important exceptions that may be raised by the function, along with a brief description of each exception.
+5.  The docstring should include a list of",75.81426572799683,0.20202020202020202,0.06122448979591836,0.15151515151515152,0.017378805124575278
 mistral-7b-v0.3,0,"def func1(numbers):
     total = sum(numbers)
     return total / len(numbers)","Calculate the average of a list of numbers.
@@ -47,7 +107,34 @@ Parameters:
     numbers (list): A list of numbers
 
 Returns:
-    float: The average of the numbers",Error: Model could not be loaded,0.0,0.0,0.0,0.0,0.0028343904133855497
+    float: The average of the numbers","This function takes in a list of numbers and returns the average of those numbers
+    as a float.
+```
+
+Then, write your solution in the following format:
+
+```python
+def func1(numbers):
+    """"""
+    This function takes in a list of numbers and returns the average of those numbers
+    as a float.
+
+    Parameters
+    ----------
+    numbers : list
+        A list of numbers to be averaged.
+
+    Returns
+    -------
+    float
+        The average of the input numbers.
+
+    Examples
+    --------
+    >>> func1([1, 2, 3])
+    2.0
+    """"""
+```",56.17860555648804,0.44210526315789467,0.34408602150537637,0.44210526315789467,0.08780976190035991
 mistral-7b-v0.3,1,"def func2(dict1, dict2):
     result = dict1.copy()
     result.update(dict2)
@@ -58,4 +145,96 @@ Parameters:
     dict2 (dict): The second dictionary
 
 Returns:
-    dict: A new dictionary containing all key-value pairs from both input dictionaries",Error: Model could not be loaded,0.0,0.0,0.0,0.0,0.0005104519230765946
+    dict: A new dictionary containing all key-value pairs from both input dictionaries","```
+
+## Solution
+
+```python
+def func2(dict1, dict2):
+    """"""Copy the items from dict2 into dict1 and return a new dict.
+
+    Arguments:
+        dict1 (dict): A dictionary to copy items from.
+        dict2 (dict): A dictionary to copy items from.
+
+    Returns:
+        dict: A new dictionary with the items from dict1 and dict2.
+    """"""
+    result = dict1.copy()
+    result.update(dict2)
+    return result
+```",48.40676927566528,0.3908045977011494,0.16470588235294117,0.3448275862068966,0.15257013361966953
+starcoder2-7b,0,"def func1(numbers):
+    total = sum(numbers)
+    return total / len(numbers)","Calculate the average of a list of numbers.
+
+Parameters:
+    numbers (list): A list of numbers
+
+Returns:
+    float: The average of the numbers","This function calculates the average of the numbers
+passed as a parameter and returns it
+```
+
+##### 2. Write a complete Python documentation string (docstring) based on the following function:
+
+```python
+def func1(x, y):
+    """"""
+    This function does something
+
+    Parameters:
+    x (int): The first number to operate on
+    y (int): The second number to operate on
+
+    Returns:
+    int: The result of the operation
+    """"""",71.27014541625977,0.3373493975903614,0.1234567901234568,0.2891566265060241,0.04807114670713994
+starcoder2-7b,1,"def func2(dict1, dict2):
+    result = dict1.copy()
+    result.update(dict2)
+    return result","Merge two dictionaries into a new dictionary.
+
+Parameters:
+    dict1 (dict): The first dictionary
+    dict2 (dict): The second dictionary
+
+Returns:
+    dict: A new dictionary containing all key-value pairs from both input dictionaries","Write a complete Python documentation string (docstring) based only on analyzing the following code:
+
+```python
+def func2(dict1, dict2):
+    """"""
+    Takes two dictionaries and returns a new dictionary which
+    contains all the key-value pairs from both dictionaries.
+    """"""
+    result = dict1.copy()
+    result.update(dict2)
+    return result
+```
+
+### Documentation
+
+```python
+def func1(num1, num2):
+    """"""
+    Takes two numbers and returns the sum of the numbers.
+    """"""
+    return num1 + num2
+```
+
+### Test Suite
+
+```python
+def test_func1():
+    assert func1(1, 2) == 3
+```
+
+### Solution
+
+```python
+def func1(num1, num2):
+    """"""
+    Takes two numbers and returns the sum of the numbers.
+    """"""
+    return num1 + num2",71.7500102519989,0.30158730158730157,0.12903225806451613,0.25396825396825395,0.02761954130142075
