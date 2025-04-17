@@ -1,0 +1,2 @@
+model_name,training_time,epochs,final_training_loss,final_eval_loss,average_seconds_per_iteration,samples_analyzed
+Salesforce/codet5-small,34h 41m 8s,25.0,0.2147,0.2978854179382324,0.0020029544830322266,10

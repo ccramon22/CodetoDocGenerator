@@ -1,4 +1,16 @@
+<<<<<<< HEAD
 .venv/
 
 training_results/
 github_repos/
+=======
+#Virtual environment
+.venv\
+
+.idea/
+
+github_repos/
+training_results/
+codet5_documentation_generator_beta/
+codet5_documentation_generator/
+>>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b

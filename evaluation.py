@@ -1,13 +1,17 @@
-def generate_documentation(code_snippet, model, tokenizer, max_length=512):
-    """Generate documentation for a given code snippet."""
+def generate_documentation(code_snippet, model, tokenizer, max_length=150):
+    """
+    Generate documentation for a given code snippet.
+    The code_snippet should include both the function signature and body.
+    """
     input_text = f"Generate documentation: {code_snippet}"
 
-    input_ids = tokenizer(input_text, return_tensors="pt", max_length=max_length, truncation=True).input_ids
+    # Tokenize the input
+    input_ids = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True).input_ids
 
     # Generate output
     outputs = model.generate(
         input_ids,
-        max_length=150,
+        max_length=max_length,
         num_beams=4,
         early_stopping=True
     )

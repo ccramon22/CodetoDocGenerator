@@ -1,18 +1,43 @@
 from transformers import T5ForConditionalGeneration, RobertaTokenizer
 from transformers import Trainer, TrainingArguments
 from datasets import Dataset
-from tqdm.auto import tqdm
+import torch
+import os
+from analytics import TrainingAnalytics, AnalyticsCallback
+from evaluation import generate_documentation
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b
 def load_model_and_tokenizer(model_name="Salesforce/codet5-base"):
     """Load pretrained CodeT5 model and tokenizer."""
-    print(f"Downloading tokenizer for {model_name}...")
-    tokenizer = RobertaTokenizer.from_pretrained(model_name, use_fast=True)
+    print(f"Checking if model {model_name} is already downloaded...")
 
-    print(f"Downloading model {model_name}... This might take a while for large models.")
+    # Check if tokenizer is already downloaded
+    tokenizer = RobertaTokenizer.from_pretrained(
+        model_name,
+        use_fast=True,
+        local_files_only=False  # Will try local first, then download if needed
+    )
+    print(f"Tokenizer loaded successfully.")
 
-    model = T5ForConditionalGeneration.from_pretrained(model_name, use_cache=True,)
+    # Check if model is already downloaded
+    try:
+        print(f"Attempting to load model from cache...")
+        model = T5ForConditionalGeneration.from_pretrained(
+            model_name,
+            local_files_only=True  # Only use local files
+        )
+        print("Model loaded from cache successfully!")
+    except Exception as e:
+        print(f"Model not found in cache. Downloading model {model_name}...")
+        model = T5ForConditionalGeneration.from_pretrained(
+            model_name,
+            use_cache=True
+        )
+        print("Model downloaded and loaded successfully!")
 
-    print("Model and tokenizer loaded successfully!")
     return model, tokenizer
 
 
@@ -37,6 +62,7 @@ def tokenize_and_prepare(examples, tokenizer, max_length=512):
     return model_inputs
 
 
+<<<<<<< HEAD
 def train_documentation_model(df, model_name="Salesforce/codet5-base", output_dir="./codet5_documentation_generator",
                               force_intel=False):
     """Train the documentation generation model.
@@ -100,6 +126,12 @@ def train_documentation_model(df, model_name="Salesforce/codet5-base", output_di
                 print("No GPU found, using CPU")
                 use_fp16 = False
                 use_bf16 = False
+=======
+def train_documentation_model(df, model_name="Salesforce/codet5-base", output_dir="./codet5_documentation_generator"):
+    """Train the documentation generation model."""
+    # Create analytics object
+    analytics = TrainingAnalytics()
+>>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b
 
     # Create dataset
     print('Creating Dataset')
@@ -108,6 +140,10 @@ def train_documentation_model(df, model_name="Salesforce/codet5-base", output_di
     # Load model and tokenizer
     print('Loading Model and Tokenizer')
     model, tokenizer = load_model_and_tokenizer(model_name)
+
+    # Force CPU usage to avoid GPU issues
+    device = torch.device("cpu")
+    print("Using CPU for training")
 
     # Move model to the appropriate device
     model = model.to(device)
@@ -123,35 +159,68 @@ def train_documentation_model(df, model_name="Salesforce/codet5-base", output_di
     print('Splitting dataset for training and testing')
     train_test_split = tokenized_dataset.train_test_split(test_size=0.1)
 
+<<<<<<< HEAD
     # Set batch size based on device
     batch_size = 4
 
+=======
+>>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b
     # Set up training arguments
     print('Setting up training parameters')
     training_args = TrainingArguments(
         output_dir="./training_results",
         evaluation_strategy="epoch",
+<<<<<<< HEAD
         learning_rate=5e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         num_train_epochs=2,
+=======
+        learning_rate=7e-5,
+        per_device_train_batch_size=16,  # Reasonable size for CPU
+        per_device_eval_batch_size=16,
+        gradient_accumulation_steps=1,
+        num_train_epochs=5,  # Reduce epochs for faster testing
+>>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b
         weight_decay=0.01,
         save_total_limit=3,
     )
 
-    # Initialize trainer
+    # Initialize trainer with callback
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_test_split["train"],
         eval_dataset=train_test_split["test"],
+        callbacks=[AnalyticsCallback(analytics)]
     )
 
     # Train model
     trainer.train()
 
+    # End training analytics
+    analytics.end_training()
+
     # Save model
     model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)
 
-    return model, tokenizer
+    # Generate some example predictions for analysis
+    print("Generating sample predictions for analysis...")
+    test_examples = train_test_split["test"].select(range(min(10, len(train_test_split["test"]))))
+
+    for example in test_examples:
+        code_snippet = example["input"]
+        generated_doc = generate_documentation(code_snippet, model, tokenizer)
+        # The new analytics doesn't have a log_prediction method, but we could add one
+        # or just print the predictions for now
+        print("\nCode snippet:", code_snippet[:100] + "..." if len(code_snippet) > 100 else code_snippet)
+        print("\nGenerated documentation:", generated_doc)
+
+    # Create analytics dashboard for presentation
+    print("Creating analytics dashboard...")
+    # This is automatically done in end_training()
+
+    print("Analytics dashboard created in ./analytics directory")
+
+    return model, tokenizer, analytics
