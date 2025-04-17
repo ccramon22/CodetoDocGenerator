@@ -1,3 +1,0 @@
-common_clang64.dll filter=lfs diff=lfs merge=lfs -text
-mkl_sycl_sparse.5.dll filter=lfs diff=lfs merge=lfs -text
-mkl_sycl_vm.5.dll filter=lfs diff=lfs merge=lfs -text
