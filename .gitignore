@@ -1,23 +1,9 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-.venv/
-
-training_results/
-github_repos/
-=======
-=======
->>>>>>> 806a7338ee1237c78f038b6f23c23feb7b317a04
 #Virtual environment
-.venv\
+.venv/
 
 .idea/
 
 github_repos/
 training_results/
 codet5_documentation_generator_beta/
-<<<<<<< HEAD
 codet5_documentation_generator/
->>>>>>> 9a4fe3dd53582ac98b2b1b7a879b3d547b10540b
-=======
-codet5_documentation_generator/
->>>>>>> 806a7338ee1237c78f038b6f23c23feb7b317a04
