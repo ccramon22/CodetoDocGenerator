@@ -10,6 +10,13 @@ def main():
         "https://github.com/getsentry/sentry.git",
         "https://github.com/scikit-learn/scikit-learn.git",
         "https://github.com/paperless-ngx/paperless-ngx.git",
+        "https://github.com/numpy/numpy.git",
+        "https://github.com/django/django.git",
+        "https://github.com/fastapi/fastapi.git",
+        "https://github.com/matplotlib/matplotlib.git",
+        "https://github.com/pandas-dev/pandas.git",
+        "https://github.com/pytorch/pytorch.git",
+
         # Add more repositories as needed
     ]
 

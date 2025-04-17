@@ -3,7 +3,7 @@ from transformers import Trainer, TrainingArguments
 from datasets import Dataset
 from tqdm.auto import tqdm
 
-def load_model_and_tokenizer(model_name="Salesforce/codet5-large"):
+def load_model_and_tokenizer(model_name="Salesforce/codet5-base"):
     """Load pretrained CodeT5 model and tokenizer."""
     print(f"Downloading tokenizer for {model_name}...")
     tokenizer = RobertaTokenizer.from_pretrained(model_name, use_fast=True)
@@ -37,7 +37,7 @@ def tokenize_and_prepare(examples, tokenizer, max_length=512):
     return model_inputs
 
 
-def train_documentation_model(df, model_name="Salesforce/codet5-large", output_dir="./codet5_documentation_generator",
+def train_documentation_model(df, model_name="Salesforce/codet5-base", output_dir="./codet5_documentation_generator",
                               force_intel=False):
     """Train the documentation generation model.
 
@@ -124,7 +124,7 @@ def train_documentation_model(df, model_name="Salesforce/codet5-large", output_d
     train_test_split = tokenized_dataset.train_test_split(test_size=0.1)
 
     # Set batch size based on device
-    batch_size = 8 if device.type != "cpu" else 4
+    batch_size = 4
 
     # Set up training arguments
     print('Setting up training parameters')
@@ -134,7 +134,7 @@ def train_documentation_model(df, model_name="Salesforce/codet5-large", output_d
         learning_rate=5e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        num_train_epochs=100,
+        num_train_epochs=2,
         weight_decay=0.01,
         save_total_limit=3,
     )

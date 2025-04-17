@@ -1,0 +1,24 @@
+{
+  "codet5-base": {
+    "model_size_mb": 850.2275390625,
+    "avg_rouge1": 0.09880952380952382,
+    "avg_rouge2": 0.0,
+    "avg_rougeL": 0.09880952380952382,
+    "avg_bleu": 0.0008447733076931505,
+    "avg_generation_time": 1.1813541650772095
+  },
+  "llama3-8b": {
+    "avg_rouge1": 0.0,
+    "avg_rouge2": 0.0,
+    "avg_rougeL": 0.0,
+    "avg_bleu": 0.0016724211682310722,
+    "avg_generation_time": 0.0
+  },
+  "mistral-7b-v0.3": {
+    "avg_rouge1": 0.0,
+    "avg_rouge2": 0.0,
+    "avg_rougeL": 0.0,
+    "avg_bleu": 0.0016724211682310722,
+    "avg_generation_time": 0.0
+  }
+}

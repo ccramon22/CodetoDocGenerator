@@ -1,0 +1,61 @@
+model,example_id,code,reference_doc,generated_doc,generation_time,rouge1,rouge2,rougeL,bleu
+codet5-base,0,"def func1(numbers):
+    total = sum(numbers)
+    return total / len(numbers)","Calculate the average of a list of numbers.
+
+Parameters:
+    numbers (list): A list of numbers
+
+Returns:
+    float: The average of the numbers",func1(numbers),1.7985382080078125,0.08333333333333334,0.0,0.08333333333333334,0.00040582799074139657
+codet5-base,1,"def func2(dict1, dict2):
+    result = dict1.copy()
+    result.update(dict2)
+    return result","Merge two dictionaries into a new dictionary.
+
+Parameters:
+    dict1 (dict): The first dictionary
+    dict2 (dict): The second dictionary
+
+Returns:
+    dict: A new dictionary containing all key-value pairs from both input dictionaries"," deffunc2(dict1,dict2):",0.5641701221466064,0.11428571428571428,0.0,0.11428571428571428,0.0012837186246449045
+llama3-8b,0,"def func1(numbers):
+    total = sum(numbers)
+    return total / len(numbers)","Calculate the average of a list of numbers.
+
+Parameters:
+    numbers (list): A list of numbers
+
+Returns:
+    float: The average of the numbers",Error: Model could not be loaded,0.0,0.0,0.0,0.0,0.0028343904133855497
+llama3-8b,1,"def func2(dict1, dict2):
+    result = dict1.copy()
+    result.update(dict2)
+    return result","Merge two dictionaries into a new dictionary.
+
+Parameters:
+    dict1 (dict): The first dictionary
+    dict2 (dict): The second dictionary
+
+Returns:
+    dict: A new dictionary containing all key-value pairs from both input dictionaries",Error: Model could not be loaded,0.0,0.0,0.0,0.0,0.0005104519230765946
+mistral-7b-v0.3,0,"def func1(numbers):
+    total = sum(numbers)
+    return total / len(numbers)","Calculate the average of a list of numbers.
+
+Parameters:
+    numbers (list): A list of numbers
+
+Returns:
+    float: The average of the numbers",Error: Model could not be loaded,0.0,0.0,0.0,0.0,0.0028343904133855497
+mistral-7b-v0.3,1,"def func2(dict1, dict2):
+    result = dict1.copy()
+    result.update(dict2)
+    return result","Merge two dictionaries into a new dictionary.
+
+Parameters:
+    dict1 (dict): The first dictionary
+    dict2 (dict): The second dictionary
+
+Returns:
+    dict: A new dictionary containing all key-value pairs from both input dictionaries",Error: Model could not be loaded,0.0,0.0,0.0,0.0,0.0005104519230765946
