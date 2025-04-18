@@ -1,3 +1,6 @@
+import os
+import json
+import pandas as pd
 from data_collection import clone_repositories, extract_python_files
 from preprocessing import extract_function_docstring_pairs_ast, prepare_dataset
 from model import train_documentation_model
@@ -22,22 +25,32 @@ def main():
 
     # Set directory for repositories
     repos_dir = "./github_repos"
+    preprocessed_data_path = "data/training_data.json"
 
-    # Clone repositories
-    clone_repositories(repos, repos_dir)
+    # Check if preprocessed data exists
+    if os.path.exists(preprocessed_data_path):
+        print(f"Loading preprocessed data from {preprocessed_data_path}")
+        with open(preprocessed_data_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        df = pd.DataFrame(data)
+    else:
+        # Clone repositories
+        clone_repositories(repos, repos_dir)
 
-    # Extract Python files
-    python_files = extract_python_files(repos_dir)
-    print(f"Found {len(python_files)} Python files")
+        # Extract Python files
+        python_files = extract_python_files(repos_dir)
+        print(f"Found {len(python_files)} Python files")
 
-    # Extract function-docstring pairs
-    pairs = extract_function_docstring_pairs_ast(python_files)
-    print(f"Extracted {len(pairs)} function-docstring pairs")
+        # Extract function-docstring pairs
+        pairs = extract_function_docstring_pairs_ast(python_files)
+        print(f"Extracted {len(pairs)} function-docstring pairs")
 
-    # Prepare dataset
-    df = prepare_dataset(pairs)
+        # Prepare dataset and save to JSON
+        df = prepare_dataset(pairs, output_path=preprocessed_data_path)
 
-    # Train model - note the updated return value handling
+    print(f"Loaded dataset with {len(df)} function-docstring pairs")
+
+    # Continue with your existing code for training
     model, tokenizer, analytics = train_documentation_model(df)
 
     print("Training complete! Model saved to ./codet5_documentation_generator")

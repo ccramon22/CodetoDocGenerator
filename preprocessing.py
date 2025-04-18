@@ -1,6 +1,8 @@
 import re
 import ast
 
+from github_repos.pytorch.docs.source.scripts.build_quantization_configs import output_path
+
 
 class FunctionVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -64,17 +66,30 @@ def extract_function_docstring_pairs_ast(python_files):
 
 
 def prepare_dataset(function_docstring_pairs):
-    """Convert extracted pairs to a format suitable for training."""
+
     data = []
 
     for pair in function_docstring_pairs:
-        # Include the function body in the input
-        input_text = f"Generate documentation: def {pair['function_name']}({pair['params']}):\n{pair['function_body']}"
+        # More structured prompt format using the requested template
+        input_text = f"""Task: Generate documentation for the following Python function
+        Python function: 
+        def {pair['function_name']}({pair['params']}):
+        {pair['function_body']}"""
+
         target_text = pair['docstring']
 
         data.append({
             'input': input_text,
             'target': target_text
         })
+
+    # Save the processed data to a JSON file
+    import os
+    import json
+    output_path = 'data/processed_dataset.json'
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
     import pandas as pd
     return pd.DataFrame(data)
