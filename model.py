@@ -1,4 +1,4 @@
-from transformers import T5ForConditionalGeneration, RobertaTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import Trainer, TrainingArguments
 from datasets import Dataset
 import torch
@@ -7,70 +7,60 @@ from analytics import TrainingAnalytics, AnalyticsCallback
 from evaluation import generate_documentation
 
 
-def load_model_and_tokenizer(model_name="Salesforce/codet5-base"):
-    """Load pretrained CodeT5 model and tokenizer."""
+def load_model_and_tokenizer(model_name="mistralai/Mistral-7B-v0.3"):
+    """Load pretrained Mistral model and tokenizer."""
     print(f"Checking if model {model_name} is already downloaded...")
 
-    # Check if tokenizer is already downloaded
-    tokenizer = RobertaTokenizer.from_pretrained(
+    # Load tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(
         model_name,
         use_fast=True,
-        local_files_only=False  # Will try local first, then download if needed
+        local_files_only=False
     )
-    print(f"Tokenizer loaded successfully.")
 
-    # Check if model is already downloaded
-    try:
-        print(f"Attempting to load model from cache...")
-        model = T5ForConditionalGeneration.from_pretrained(
-            model_name,
-            local_files_only=True  # Only use local files
-        )
-        print("Model loaded from cache successfully!")
-    except Exception as e:
-        print(f"Model not found in cache. Downloading model {model_name}...")
-        model = T5ForConditionalGeneration.from_pretrained(
-            model_name,
-            use_cache=True
-        )
-        print("Model downloaded and loaded successfully!")
+    # Set padding token for Mistral
+    tokenizer.pad_token = tokenizer.eos_token
+    print(f"Tokenizer loaded successfully and padding token set.")
+
+    # Load model
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        torch_dtype=torch.float16
+    )
+    print("Model loaded successfully!")
 
     return model, tokenizer
 
 
-def tokenize_and_prepare(examples, tokenizer, max_length=512):
-    """Tokenize inputs and targets for model training."""
-    model_inputs = tokenizer(
-        examples['input'],
-        max_length=max_length,
-        padding="max_length",
-        truncation=True
-    )
+def tokenize_dataset(df, tokenizer, max_length=512):
+    """Tokenize dataset for the model."""
+    from datasets import Dataset
 
-    with tokenizer.as_target_tokenizer():
-        labels = tokenizer(
-            examples['target'],
+    dataset = Dataset.from_pandas(df)
+
+    def tokenize_function(examples):
+        model_inputs = tokenizer(
+            examples['input'],
             max_length=max_length,
             padding="max_length",
             truncation=True
         )
 
-    model_inputs["labels"] = labels["input_ids"]
-    return model_inputs
+        # For causal LM, labels are input_ids
+        model_inputs["labels"] = model_inputs["input_ids"].copy()
+        return model_inputs
+
+    return dataset.map(tokenize_function, batched=True)
 
 
-def train_documentation_model(df, model_name="Salesforce/codet5-base", output_dir="./codet5_documentation_generator",
+def train_documentation_model(df, model_name="mistralai/Mistral-7B-v0.3",
+                              output_dir="./mistral_documentation_generator",
                               force_intel=False):
-    """Train the documentation generation model.
-
-    Args:
-        df: DataFrame containing the training data
-        model_name: Pre-trained model to use
-        output_dir: Directory to save the trained model
-        force_intel: If True, will error if Intel GPU is not available
-    """
+    """Train the documentation generation model."""
     import sys
     import torch
+    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+    from transformers import BitsAndBytesConfig
 
     # Create analytics object
     analytics = TrainingAnalytics()
@@ -122,46 +112,72 @@ def train_documentation_model(df, model_name="Salesforce/codet5-base", output_di
                 use_bf16 = False
             else:
                 device = torch.device("cpu")
-                print("No GPU found, using CPU")
+                print("No GPU found, using CPU. Training will be very slow.")
                 use_fp16 = False
                 use_bf16 = False
-
-    # Create dataset
-    print('Creating Dataset')
-    dataset = Dataset.from_pandas(df)
 
     # Load model and tokenizer
     print('Loading Model and Tokenizer')
     model, tokenizer = load_model_and_tokenizer(model_name)
 
-    # Move model to the appropriate device
-    model = model.to(device)
-
-    # Tokenize dataset
-    print('Stand back, Tokenizing in progress')
-    tokenized_dataset = dataset.map(
-        lambda examples: tokenize_and_prepare(examples, tokenizer),
-        batched=True
-    )
+    # Prepare dataset with proper tokenization
+    tokenized_dataset = tokenize_dataset(df, tokenizer)
 
     # Split dataset
     print('Splitting dataset for training and testing')
     train_test_split = tokenized_dataset.train_test_split(test_size=0.1)
 
-    # Set batch size based on device
-    batch_size = 4 if device.type != "cpu" else 16
+    # Configure model for efficient training with LoRA
+    if device.type != "cpu":
+        print("Configuring model for efficient training with LoRA")
+
+        # Configure LoRA
+        peft_config = LoraConfig(
+            r=16,
+            lora_alpha=32,
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+            lora_dropout=0.1,
+            bias="none",
+            task_type="CAUSAL_LM"
+        )
+
+        # Prepare model for training
+        model = prepare_model_for_kbit_training(model)
+        model = get_peft_model(model, peft_config)
+    else:
+        print("WARNING: Training on CPU without quantization. This will be extremely slow and memory intensive.")
+        print("Consider using a subset of the data and fewer training steps.")
+
+    # Move model to device
+    model = model.to(device)
+
+    # Set batch size based on device and model size
+    batch_size = 1 if device.type != "cpu" else 1
 
     # Set up training arguments
     print('Setting up training parameters')
     training_args = TrainingArguments(
         output_dir="./training_results",
-        evaluation_strategy="epoch",
+        eval_strategy="steps",  # Use eval_strategy instead of evaluation_strategy
+        eval_steps=500,
+        logging_strategy="steps",
+        logging_steps=100,
+        save_strategy="steps",
+        save_steps=500,
         learning_rate=5e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        num_train_epochs=5,
+        num_train_epochs=1,
         weight_decay=0.01,
-        save_total_limit=3,
+        save_total_limit=1,
+        load_best_model_at_end=True,
+        gradient_accumulation_steps=16,
+        fp16=use_fp16,
+        bf16=use_bf16,
+        warmup_steps=500,
+        max_steps=5000,
+        report_to="none",
+        remove_unused_columns=False  # Important fix
     )
 
     # Initialize trainer with callback
@@ -174,31 +190,51 @@ def train_documentation_model(df, model_name="Salesforce/codet5-base", output_di
     )
 
     # Train model
+    print("Starting training...")
     trainer.train()
 
     # End training analytics
     analytics.end_training()
 
     # Save model
+    print("Saving model...")
     model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)
 
     # Generate some example predictions for analysis
     print("Generating sample predictions for analysis...")
-    test_examples = train_test_split["test"].select(range(min(10, len(train_test_split["test"]))))
+    test_examples = train_test_split["test"].select(range(min(3, len(train_test_split["test"]))))
 
     for example in test_examples:
-        code_snippet = example["input"]
-        generated_doc = generate_documentation(code_snippet, model, tokenizer)
-        # The new analytics doesn't have a log_prediction method, but we could add one
-        # or just print the predictions for now
+        # Get input code snippet from dataset
+        input_ids = example["input_ids"]
+        input_text = tokenizer.decode(input_ids, skip_special_tokens=True)
+        code_snippet = input_text.split("Code: ")[1].split("\nDocumentation:")[
+            0] if "Code: " in input_text else input_text
+
+        # Generate documentation
+        prompt = f"Code: {code_snippet}\nDocumentation:"
+        inputs = tokenizer(prompt, return_tensors="pt").to(device)
+
+        with torch.no_grad():
+            outputs = model.generate(
+                inputs["input_ids"],
+                max_new_tokens=200,
+                temperature=0.7,
+                top_p=0.95,
+                do_sample=True,
+                pad_token_id=tokenizer.eos_token_id
+            )
+
+        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        generated_doc = generated_text.split("Documentation:")[
+            1].strip() if "Documentation:" in generated_text else generated_text
+
         print("\nCode snippet:", code_snippet[:100] + "..." if len(code_snippet) > 100 else code_snippet)
         print("\nGenerated documentation:", generated_doc)
 
-    # Create analytics dashboard for presentation
+    # Create analytics dashboard
     print("Creating analytics dashboard...")
-    # This is automatically done in end_training()
-
     print("Analytics dashboard created in ./analytics directory")
 
     return model, tokenizer, analytics

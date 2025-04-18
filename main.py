@@ -25,7 +25,7 @@ def main():
 
     # Set directory for repositories
     repos_dir = "./github_repos"
-    preprocessed_data_path = "data/training_data.json"
+    preprocessed_data_path = "data/processed_dataset.json"
 
     # Check if preprocessed data exists
     if os.path.exists(preprocessed_data_path):
@@ -46,11 +46,10 @@ def main():
         print(f"Extracted {len(pairs)} function-docstring pairs")
 
         # Prepare dataset and save to JSON
-        df = prepare_dataset(pairs, output_path=preprocessed_data_path)
+        df = prepare_dataset(pairs)
 
     print(f"Loaded dataset with {len(df)} function-docstring pairs")
 
-    # Continue with your existing code for training
     model, tokenizer, analytics = train_documentation_model(df)
 
     print("Training complete! Model saved to ./codet5_documentation_generator")
