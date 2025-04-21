@@ -1,5 +1,6 @@
 import re
 import ast
+import astpretty
 
 
 
@@ -49,6 +50,7 @@ def extract_function_docstring_pairs_ast(python_files):
 
                 # Parse the file
                 tree = ast.parse(content)
+                astpretty.pprint(tree)
 
                 # Visit all function nodes
                 visitor = FunctionVisitor()
@@ -64,13 +66,26 @@ def extract_function_docstring_pairs_ast(python_files):
     return pairs
 
 
-def prepare_dataset(df, tokenizer):
-    """Convert DataFrame to Dataset."""
-    from datasets import Dataset
+def prepare_dataset(pairs):
+    """Convert function-docstring pairs to a DataFrame."""
+    import pandas as pd
 
-    # Set padding token for tokenizer if using Mistral
-    if 'tokenizer' in globals():
-        tokenizer.pad_token = tokenizer.eos_token
+    # Convert to DataFrame
+    df = pd.DataFrame(pairs)
 
-    # Create dataset directly from the dataframe
-    return Dataset.from_pandas(df)
+    # Create input-output pairs for the model
+    df['input'] = df.apply(
+        lambda row: f"Code: def {row['function_name']}({row['params']}):\n{row['function_body']}\nDocumentation:",
+        axis=1
+    )
+
+    df['output'] = df['docstring']
+
+    # Filter out entries with empty docstrings
+    df = df[df['docstring'].str.strip() != '']
+
+    # Sample a manageable subset (important to reduce memory usage)
+    if len(df) > 10000:
+        df = df.sample(10000, random_state=42)
+
+    return df

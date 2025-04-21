@@ -1,0 +1,13 @@
+
+torch==2.6.0
+torchvision==0.21.0
+torchaudio==2.6.0
+transformers==4.31.0
+datasets==2.14.4
+pandas
+numpy
+gitpython
+peft==0.5.0
+bitsandbytes==0.41.1
+accelerate==0.21.0
+intel-extension-for-pytorch==2.0.100 # For Intel GPUs
