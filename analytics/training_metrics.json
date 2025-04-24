@@ -1,0 +1,20 @@
+{
+  "loss": [
+    4.0003
+  ],
+  "learning_rate": [
+    4.600000000000001e-05
+  ],
+  "epoch": [
+    0.0019352279214684509
+  ],
+  "step": [],
+  "eval_loss": [],
+  "eval_accuracy": [],
+  "eval_precision": [],
+  "eval_recall": [],
+  "eval_f1": [],
+  "timestamps": [
+    1030.2363860607147
+  ]
+}

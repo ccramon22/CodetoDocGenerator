@@ -7,7 +7,7 @@ from analytics import TrainingAnalytics, AnalyticsCallback
 from evaluation import generate_documentation
 
 
-def load_model_and_tokenizer(model_name="mistralai/Mistral-7B-v0.3"):
+def load_model_and_tokenizer(model_name="unsloth/mistral-7b-bnb-4bit"):
     """Load pretrained Mistral model and tokenizer."""
     print(f"Checking if model {model_name} is already downloaded...")
 
@@ -39,8 +39,40 @@ def tokenize_dataset(df, tokenizer, max_length=512):
     dataset = Dataset.from_pandas(df)
 
     def tokenize_function(examples):
+        # PROMPT DESIGNER NOTES:
+        # This function structures the input for the model. The current structure is:
+        # 1. Imports section (if any imports exist)
+        # 2. Class context (if function is a method)
+        # 3. Function body
+        # 4. Target documentation
+        #
+        # You can modify the prompt structure while maintaining this context hierarchy.
+        # Available context information:
+        # - ctx['imports']: List of import statements from the file
+        # - ctx['class_context']: Name of the containing class (if any)
+        # - ctx['class_docstring']: Documentation of the containing class (if any)
+        # - ctx['file_path']: Path to the source file
+        #
+        # Current max_length is 512 tokens. Adjust if needed for your prompt design.
+        # The model expects the documentation to be the last part of the input.
+        
+        inputs = []
+        for func, doc, ctx in zip(examples['function_body'], examples['docstring'], examples['context']):
+            # Build context string
+            context_str = ""
+            if ctx['imports']:
+                context_str += "Imports:\n" + "\n".join(ctx['imports']) + "\n\n"
+            if ctx['class_context']:
+                context_str += f"Class: {ctx['class_context']}\n"
+                if 'class_docstring' in ctx:
+                    context_str += f"Class Documentation:\n{ctx['class_docstring']}\n\n"
+            
+            # Combine context with function and docstring
+            input_text = f"{context_str}Function:\n{func}\n\nDocumentation:\n{doc}"
+            inputs.append(input_text)
+        
         model_inputs = tokenizer(
-            examples['input'],
+            inputs,
             max_length=max_length,
             padding="max_length",
             truncation=True
@@ -53,7 +85,7 @@ def tokenize_dataset(df, tokenizer, max_length=512):
     return dataset.map(tokenize_function, batched=True)
 
 
-def train_documentation_model(df, model_name="mistralai/Mistral-7B-v0.3",
+def train_documentation_model(df, model_name="unsloth/mistral-7b-bnb-4bit",
                               output_dir="./mistral_documentation_generator",
                               force_intel=False):
     """Train the documentation generation model."""
@@ -131,10 +163,10 @@ def train_documentation_model(df, model_name="mistralai/Mistral-7B-v0.3",
     if device.type != "cpu":
         print("Configuring model for efficient training with LoRA")
 
-        # Configure LoRA
+        # Configure LoRA with minimal settings for testing
         peft_config = LoraConfig(
-            r=16,
-            lora_alpha=32,
+            r=4,  # Reduced from 8 to 4
+            lora_alpha=8,  # Reduced from 16 to 8
             target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
             lora_dropout=0.1,
             bias="none",
@@ -145,8 +177,7 @@ def train_documentation_model(df, model_name="mistralai/Mistral-7B-v0.3",
         model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, peft_config)
     else:
-        print("WARNING: Training on CPU without quantization. This will be extremely slow and memory intensive.")
-        print("Consider using a subset of the data and fewer training steps.")
+        print("WARNING: Training on CPU. This will be extremely slow and memory intensive.")
 
     # Move model to device
     model = model.to(device)
@@ -154,30 +185,31 @@ def train_documentation_model(df, model_name="mistralai/Mistral-7B-v0.3",
     # Set batch size based on device and model size
     batch_size = 1 if device.type != "cpu" else 1
 
-    # Set up training arguments
+    # Set up training arguments for minimal test run
     print('Setting up training parameters')
     training_args = TrainingArguments(
         output_dir="./training_results",
-        eval_strategy="steps",  # Use eval_strategy instead of evaluation_strategy
-        eval_steps=500,
+        eval_strategy="steps",
+        eval_steps=100,  # Reduced from 500
         logging_strategy="steps",
-        logging_steps=100,
+        logging_steps=50,  # Reduced from 100
         save_strategy="steps",
-        save_steps=500,
+        save_steps=100,  # Reduced from 500
         learning_rate=5e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        num_train_epochs=1,
+        num_train_epochs=1,  # Single epoch for testing
         weight_decay=0.01,
         save_total_limit=1,
         load_best_model_at_end=True,
-        gradient_accumulation_steps=16,
+        gradient_accumulation_steps=8,  # Reduced from 16
         fp16=use_fp16,
         bf16=use_bf16,
-        warmup_steps=500,
-        max_steps=5000,
+        warmup_steps=50,  # Reduced from 500
+        max_steps=200,  # Reduced from 5000
         report_to="none",
-        remove_unused_columns=False  # Important fix
+        remove_unused_columns=False,
+        gradient_checkpointing=True  # Added to reduce memory usage
     )
 
     # Initialize trainer with callback

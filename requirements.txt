@@ -1,0 +1,11 @@
+peft>=0.7.1
+transformers>=4.37.2
+datasets>=2.16.1
+torch>=2.2.0
+accelerate>=0.27.2
+bitsandbytes>=0.42.0
+pandas>=2.2.0
+numpy>=1.26.3
+scikit-learn>=1.4.0
+matplotlib>=3.8.2
+gitpython>=3.1.41 

@@ -6,7 +6,6 @@ from preprocessing import extract_function_docstring_pairs_ast, prepare_dataset
 from model import train_documentation_model
 from evaluation import evaluate_model, generate_documentation
 
-
 def main():
     # Define repositories to clone
     repos = [
@@ -19,8 +18,6 @@ def main():
         "https://github.com/matplotlib/matplotlib.git",
         "https://github.com/pandas-dev/pandas.git",
         "https://github.com/pytorch/pytorch.git",
-
-        # Add more repositories as needed
     ]
 
     # Set directory for repositories
@@ -50,9 +47,10 @@ def main():
 
     print(f"Loaded dataset with {len(df)} function-docstring pairs")
 
+    # Train the model
     model, tokenizer, analytics = train_documentation_model(df)
 
-    print("Training complete! Model saved to ./codet5_documentation_generator")
+    print(f"Training complete! Model saved to ./{model}_documentation_generator")
 
     # Print analytics information
     print(
@@ -75,7 +73,6 @@ def main():
         print(f"CODE:\n{result['code_snippet']}\n")
         print(f"GENERATED DOCUMENTATION:\n{result['generated_documentation']}\n")
         print("-" * 70)
-
 
 if __name__ == "__main__":
     main()
