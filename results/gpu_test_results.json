@@ -1,0 +1,16 @@
+{
+  "cuda_available": false,
+  "xpu_available": true,
+  "cuda_devices": [],
+  "xpu_devices": [
+    "Intel(R) Arc(TM) A770 Graphics"
+  ],
+  "pytorch_version": "2.7.0+xpu",
+  "cuda_version": null,
+  "system_info": {
+    "cpu_cores": 16,
+    "architecture": "AMD64",
+    "system": "Windows",
+    "release": "10"
+  }
+}

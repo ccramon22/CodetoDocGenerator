@@ -5,11 +5,51 @@ import torch
 import os
 from analytics import TrainingAnalytics, AnalyticsCallback
 from evaluation import generate_documentation
+import gc
+import random
+import json
+from pathlib import Path
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+import logging
+from datetime import datetime
+from torch.optim import AdamW
+import shutil
+import time
+from transformers import BitsAndBytesConfig
+
+# Set up logging
+log_dir = Path("logs")
+log_dir.mkdir(exist_ok=True)
+log_file = log_dir / f"training_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 
 def load_model_and_tokenizer(model_name="mistralai/Mistral-7B-v0.3"):
     """Load pretrained Mistral model and tokenizer."""
     print(f"Checking if model {model_name} is already downloaded...")
+
+    # Check available devices
+    if not torch.xpu.is_available():
+        raise RuntimeError("Intel XPU is not available. Please ensure Intel GPU drivers are installed.")
+    
+    print("Intel XPU is available")
+    print(f"XPU Device: {torch.xpu.get_device_name(0)}")
+    print(f"XPU Memory: {torch.xpu.get_device_properties(0).total_memory / 1024**3:.2f} GB")
+    
+    # Clear XPU cache
+    torch.xpu.empty_cache()
+    gc.collect()
+    print("Cleared device caches and memory")
 
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
@@ -18,60 +58,217 @@ def load_model_and_tokenizer(model_name="mistralai/Mistral-7B-v0.3"):
         local_files_only=False
     )
 
-    # Set padding token for Mistral
+    # Set padding token
     tokenizer.pad_token = tokenizer.eos_token
     print(f"Tokenizer loaded successfully and padding token set.")
 
-    # Load model
+    # Load model with XPU optimization
+    print("Loading model with XPU optimization...")
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float16
+        low_cpu_mem_usage=True,
+        torch_dtype=torch.float16,
+        use_cache=False,
+        use_safetensors=True,
+        ignore_mismatched_sizes=True,
+        local_files_only=False,
+        revision="main",
+        trust_remote_code=True
     )
+    
+    # Move model to XPU
+    model = model.to('xpu')
+    
+    # Enable gradient checkpointing
+    model.gradient_checkpointing_enable()
+    
     print("Model loaded successfully!")
-
     return model, tokenizer
 
 
 def tokenize_dataset(df, tokenizer, max_length=512):
-    """Tokenize dataset for the model."""
+    """Tokenize dataset for the model with one-shot learning and chain-of-thought."""
     from datasets import Dataset
+    import random
+    import os
+    import json
+    from pathlib import Path
+
+    # Define cache paths
+    cache_dir = Path("data/cache")
+    cache_dir.mkdir(exist_ok=True)
+    tokenized_cache_path = cache_dir / "tokenized_dataset"
+    mapping_cache_path = cache_dir / "example_mapping.json"
+
+    # Check if we have cached results
+    if tokenized_cache_path.exists() and mapping_cache_path.exists():
+        print("Loading cached tokenized dataset...")
+        try:
+            # Load the cached dataset
+            tokenized_dataset = Dataset.load_from_disk(str(tokenized_cache_path))
+            
+            # Load the example mapping
+            with open(mapping_cache_path, 'r') as f:
+                example_mapping = json.load(f)
+            
+            print("Successfully loaded cached dataset!")
+            return tokenized_dataset
+        except Exception as e:
+            print(f"Error loading cached dataset: {e}")
+            print("Proceeding with fresh tokenization...")
 
     dataset = Dataset.from_pandas(df)
 
     def tokenize_function(examples):
-        model_inputs = tokenizer(
-            examples['input'],
-            max_length=max_length,
-            padding="max_length",
-            truncation=True
-        )
+        inputs = []
+        labels = []
+        example_mapping = {}  # Store which examples were paired together
+        
+        for idx, (func, doc, ctx) in enumerate(zip(examples['function_body'], examples['docstring'], examples['context'])):
+            # Build context string
+            context_str = ""
+            if ctx and 'imports' in ctx:
+                context_str += "Imports:\n" + "\n".join(ctx['imports']) + "\n\n"
+            if ctx and 'class_context' in ctx:
+                context_str += f"Class: {ctx['class_context']}\n"
+                if 'class_docstring' in ctx:
+                    context_str += f"Class Documentation:\n{ctx['class_docstring']}\n\n"
+            
+            # Add one-shot example
+            # Get a random example from the dataset that's not the current one
+            example_idx = random.randint(0, len(dataset) - 1)
+            example = dataset[example_idx]
+            while example['function_body'] == func:  # Ensure we don't use the same function
+                example_idx = random.randint(0, len(dataset) - 1)
+                example = dataset[example_idx]
+            
+            # Store the mapping
+            example_mapping[idx] = example_idx
+            
+            # Create input text without the target documentation
+            input_text = f"""Example Function:
+{example['function_body']}
 
-        # For causal LM, labels are input_ids
-        model_inputs["labels"] = model_inputs["input_ids"].copy()
-        return model_inputs
+Let's analyze this function step by step:
+1. First, I identify the function's purpose and main operations
+2. Then, I examine the parameters and their types
+3. Next, I look for return values and their types
+4. Finally, I consider any important side effects or exceptions
 
-    return dataset.map(tokenize_function, batched=True)
+Based on this analysis, here's the documentation:
+{example['docstring']}
+
+Now, let's document this new function:
+{func}
+
+Let's analyze this function step by step:
+1. First, I identify the function's purpose and main operations
+2. Then, I examine the parameters and their types
+3. Next, I look for return values and their types
+4. Finally, I consider any important side effects or exceptions
+
+Based on this analysis, here's the documentation:"""
+
+            # Create full text with documentation for labels
+            full_text = input_text + f"\n{doc}"
+
+            # Tokenize input and full text
+            tokenized_input = tokenizer(
+                input_text,
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+                return_tensors="pt"
+            )
+
+            tokenized_full = tokenizer(
+                full_text,
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+                return_tensors="pt"
+            )
+
+            # Convert to lists for dataset compatibility
+            input_dict = {k: v[0].tolist() for k, v in tokenized_input.items()}
+            label_dict = {k: v[0].tolist() for k, v in tokenized_full.items()}
+            
+            inputs.append(input_dict)
+            labels.append(label_dict)
+        
+        # Combine all tokenized inputs and labels
+        combined = {
+            "input_ids": [item["input_ids"] for item in inputs],
+            "attention_mask": [item["attention_mask"] for item in inputs],
+            "labels": [item["input_ids"] for item in labels]  # Use input_ids as labels
+        }
+
+        # Save the example mapping
+        with open(mapping_cache_path, 'w') as f:
+            json.dump(example_mapping, f)
+        
+        return combined
+
+    # Map the tokenization function to the dataset
+    print("Tokenizing dataset (this may take a while)...")
+    tokenized_dataset = dataset.map(
+        tokenize_function,
+        batched=True,
+        batch_size=1,  # Process one at a time to handle random example selection
+        remove_columns=dataset.column_names  # Remove original columns
+    )
+    
+    # Save the tokenized dataset
+    print("Saving tokenized dataset to cache...")
+    tokenized_dataset.save_to_disk(str(tokenized_cache_path))
+    print("Tokenized dataset saved successfully!")
+    
+    return tokenized_dataset
 
 
 def train_documentation_model(df, model_name="mistralai/Mistral-7B-v0.3",
-                              output_dir="./mistral_documentation_generator",
-                              force_intel=False,
-                              recovery_mode=False):
+                            output_dir="./mistral_documentation_generator",
+                            force_intel=False,
+                            recovery_mode=False):
     """Train the documentation generation model with optimized memory usage for Intel A770."""
     import sys
     import torch
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-    from transformers import BitsAndBytesConfig
+    import shutil
+    import os
+    import time
+    import logging
+
+    # Close any existing log handlers
+    for handler in logging.root.handlers[:]:
+        handler.close()
+        logging.root.removeHandler(handler)
+
+    # Clear logs directory with retry
+    logs_dir = "./logs"
+    max_retries = 3
+    retry_delay = 1  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            if os.path.exists(logs_dir):
+                print(f"Clearing logs directory: {logs_dir}")
+                shutil.rmtree(logs_dir)
+            os.makedirs(logs_dir, exist_ok=True)
+            break
+        except PermissionError:
+            if attempt < max_retries - 1:
+                print(f"Log directory is in use, waiting {retry_delay} seconds before retry...")
+                time.sleep(retry_delay)
+            else:
+                print("Warning: Could not clear logs directory, continuing with existing logs")
+                break
 
     # Create analytics object
     analytics = TrainingAnalytics()
 
     # Force Intel GPU with optimized settings
     try:
-         #####import intel_extension_for_pytorch as ipex
-        # if not torch.xpu.is_available():
-        #     print("ERROR: Intel GPU extensions are installed but no Intel GPU is available.")
-        #     sys.exit(1)
         device = torch.device("xpu")
         print(f"Using Intel GPU: {torch.xpu.get_device_name(0)}")
         use_bf16 = True
@@ -182,11 +379,6 @@ def train_documentation_model(df, model_name="mistralai/Mistral-7B-v0.3",
         per_device_eval_batch_size=batch_size,
         num_train_epochs=3,  # Reduced from 5
         weight_decay=0.01,
-        save_total_limit=1,
-        load_best_model_at_end=True,
-        gradient_accumulation_steps=gradient_accumulation_steps,
-        fp16=use_fp16,
-        bf16=use_bf16,
         warmup_steps=100,  # Reduced
         max_steps=recovery_mode and 1000 or 2000,  # Reduced further in recovery mode
         report_to="none",
@@ -195,15 +387,9 @@ def train_documentation_model(df, model_name="mistralai/Mistral-7B-v0.3",
         gradient_checkpointing=True,  # Enable gradient checkpointing
         dataloader_num_workers=1,  # Limit workers
         group_by_length=True,  # Group by sequence length for efficiency
-    )
-
-    # Initialize trainer with callback
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_test_split["train"],
-        eval_dataset=train_test_split["test"],
-        callbacks=[AnalyticsCallback(analytics)]
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        fp16=use_fp16,
+        bf16=use_bf16
     )
 
     # Train model
