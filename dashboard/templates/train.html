@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Train Model</title>
+</head>
+<body>
+    <h1>Train Documentation Generation Model</h1>
+
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit">Start Training</button>
+    </form>
+
+    {% if status %}
+        <h3>{{ status }}</h3>
+    {% endif %}
+
+    <a href="/">Back to Home</a>
+</body>
+</html>
