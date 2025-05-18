@@ -1,4 +1,4 @@
-# ParameterPilots
+# AI Group Project
 
 A project for fine-tuning language models to generate documentation for Python code.
 
